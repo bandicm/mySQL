@@ -1,0 +1,1 @@
+g++ test.cpp ../src/* -o test.o -lmysqlcppconn
