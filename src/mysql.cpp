@@ -22,21 +22,24 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
 }
 
 bool mySQL::open(const string _db) {
+   io.lock();
    db = _db.empty() ? db : _db;
    bool status = true;
 
    try {
       con->setSchema(db);
       status = false;
+      io.unlock();
    }
    catch (const SQLException &error) {
       cout << error.what() << endl;
+      io.unlock();
    } 
-
    return status;
 }
 
 bool mySQL::connect() {
+   io.lock();
    uint trys = 0;
    bool status = true;
 
@@ -45,10 +48,12 @@ bool mySQL::connect() {
          drv = get_mysql_driver_instance();
          con = drv->connect(path, username, password);
          status = false;
+         io.unlock();
       }
       catch (const SQLException &error) {
          cout << error.what() << endl;
          usleep(10000*trys++);
+         io.unlock();
       }
    }
 
@@ -56,15 +61,18 @@ bool mySQL::connect() {
 }
 
 bool mySQL::close() {
+   io.lock();
    bool status = true;
 
    if (con->isValid() && !con->isClosed()) {
       try {
          con->close();
          status = false;
+         io.unlock();
       } 
       catch (const SQLException &error) {
          cout << error.what() << endl;
+         io.unlock();
       }
    }
 
@@ -83,6 +91,7 @@ map<string, vector<string>> mySQL::query(const string sql_command) {
       }
    }
 
+   io.lock();
    /**/
    map<string, vector<string>> maped;
 
@@ -115,12 +124,15 @@ map<string, vector<string>> mySQL::query(const string sql_command) {
       delete res;
       delete stmt;
 
+      io.unlock();
    }
    catch (const SQLException &error) {
       cout << error.what() << endl;
+      io.unlock();
    }
    catch (const string error) {
       throw error;
+      io.unlock();
    }
 
    /**/
@@ -146,6 +158,7 @@ bool mySQL::change(const string sql_command) {
       }
    }
 
+   io.lock();
    /**/
    bool status = false;
    
@@ -157,13 +170,15 @@ bool mySQL::change(const string sql_command) {
       status = (bool)changeCatch;
 
       delete stmt;
-
+      io.unlock();
    }
    catch (const SQLException &error) {
       cout << error.what() << endl;
+      io.unlock();
    }
    catch (const string error) {
       throw error;
+      io.unlock();
    }
 
    /**/

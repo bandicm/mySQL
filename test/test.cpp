@@ -10,7 +10,7 @@ int main() {
 
     try {
 
-        auto res = mydb.query("SELECT * FROM users");
+        auto res = mydb.query("SELECT * FROM records");
 
         for (auto i : res) {
             for (auto j: i.second) {
@@ -18,9 +18,9 @@ int main() {
             }
         }
 
-        if (mydb.change("UPDATE records SET enabled = 0 WHERE domain = 'bitelex.ml'")) {
-            cout << "Update sucessfuly" << endl;
-        }
+        // if (mydb.change("UPDATE records SET enabled = 0 WHERE domain = 'bitelex.ml'")) {
+        //     cout << "Update sucessfuly" << endl;
+        // }
 
     }
     catch (const SQLException error) {

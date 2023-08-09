@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <mutex>
 
 #include <mysql_driver.h>
 #include <mysql_connection.h>
@@ -22,7 +23,7 @@ using namespace mysql;
 
 class mySQL {
     public:
-
+    mutex io;
     MySQL_Driver *drv;
     Connection *con;
     string path, username, password, db;
