@@ -195,10 +195,11 @@ bool mySQL::change(const string sql_command) {
 
 string mySQL::getTable(const string req) {
    size_t from = req.find("FROM") < req.find("from") ? req.find("FROM") : req.find("from");
+   size_t ends = req.find(" ", from+5) < req.length() ? req.find(" ", from+5) : req.length();
    if (from > req.length()) {
       return "";
    }
-   string table = req.substr(from+5, req.find(" ", from+5));
+   string table = req.substr(from+5, ends-from-5);
    return table;
 }
 

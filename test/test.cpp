@@ -10,7 +10,7 @@ int main() {
 
     try {
 
-        auto res = mydb.query("SELECT * FROM records");
+        auto res = mydb.query("SELECT * FROM records WHERE enabled = 1;");
 
         for (auto i : res) {
             for (auto j: i.second) {
