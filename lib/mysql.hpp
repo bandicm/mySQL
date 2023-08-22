@@ -2,6 +2,7 @@
 #define _MYSQL_
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <iostream>
@@ -21,6 +22,40 @@ using namespace std;
 using namespace sql;
 using namespace mysql;
 
+class sqlQA {
+    public:
+    // query
+    string cmd;
+    string table;
+    vector<string> columns;
+    bool isUpdate = false;
+    bool isSelect = false;
+
+    // answer
+    uint updateCatch = 0;
+    bool executed = false;
+    map<string, vector<string>> result;
+    uint num_rows = 0;
+    uint num_columns = 0;
+
+    // query methods
+    sqlQA& select(const string _select = "*");
+    sqlQA& from(const string _tablename);
+    sqlQA& where(const string _condition);
+    // sqlQA& limit();
+    // sqlQA& insertInTo(string _tablename, string _columns);
+    // sqlQA& values(); // proizvoljan broj argumenata
+    sqlQA& update(const string _tablename);
+    sqlQA& set(const string _column_value_pairs);
+    // sqlQA& deleteFrom();
+
+    // answer methods
+
+
+    private:
+    void parse_columns(const string _cloumns);
+};
+
 class mySQL {
     public:
     mutex io;
@@ -32,12 +67,10 @@ class mySQL {
     mySQL(const string _path, const string _username, const string _password, const string _db, bool _isPersistent = false);
     bool open(const string _db = "");
     bool connect();
-    bool close();
-    map<string, vector<string>> query(const string sql_command);
-    bool change(const string sql_command);
-    string getTable(const string req);
+    bool disconnect();
+    void exec(sqlQA &sql_qa);
+    void getColumns(const string _table, vector<string> &_columns);
     ~mySQL();
-
 };
 
 
