@@ -42,15 +42,14 @@ class sqlQA {
     sqlQA& select(const string _select = "*");
     sqlQA& from(const string _tablename);
     sqlQA& where(const string _condition);
-    // sqlQA& limit();
-    // sqlQA& insertInTo(string _tablename, string _columns);
-    // sqlQA& values(); // proizvoljan broj argumenata
+    sqlQA& limit(const uint _limit);
+    sqlQA& insertInTo(const string _tablename, const string _columns = "");
+    sqlQA& values(const string _values);
     sqlQA& update(const string _tablename);
     sqlQA& set(const string _column_value_pairs);
-    // sqlQA& deleteFrom();
+    sqlQA& deleteFrom(const string _table);
 
     // answer methods
-
 
     private:
     void parse_columns(const string _cloumns);

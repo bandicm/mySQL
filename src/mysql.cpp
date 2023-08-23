@@ -20,6 +20,28 @@ sqlQA& sqlQA::where(const string _condition) {
    return *this;
 }
 
+sqlQA& sqlQA::limit(const uint _limit) {
+   cmd += "LIMIT " + to_string(_limit) + " ";
+   return *this;
+}
+
+sqlQA& sqlQA::insertInTo(const string _tablename, const string _columns) {
+   isUpdate = true;
+   cmd += "INSERT INTO " + _tablename;
+   if (_columns.empty()) {
+      cmd += " ";
+   }
+   else {
+      cmd += " (" + _columns + ") ";
+   }
+   return *this;
+}
+
+sqlQA& sqlQA::values(const string _values) {
+   cmd += "VALUES (" + _values + ") ";
+   return *this;
+}
+
 sqlQA& sqlQA::update(const string _table) {
    isUpdate = true;
    cmd += "UPDATE " + _table + " ";
@@ -28,6 +50,12 @@ sqlQA& sqlQA::update(const string _table) {
 
 sqlQA& sqlQA::set(const string _column_value_pairs) {
    cmd += "SET " + _column_value_pairs + " ";
+   return *this;
+}
+
+sqlQA& sqlQA::deleteFrom(const string _table) {
+   isUpdate = true;
+   cmd += "DELETE FROM " + _table + " ";
    return *this;
 }
 
