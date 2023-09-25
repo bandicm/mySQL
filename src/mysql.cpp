@@ -74,12 +74,15 @@ void sqlQA::parse_columns(const string _columns) {
    }
 }
 
-mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, bool _isPersistent) {
+mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, const bool _isPersistent, const uint _numOfCon) {
    path = _path;
    username = _username;
    password = _password;
    db = _db;
-   isPersistent = _isPersistent;
+   isPersistent = _numOfCon > 1 ? true : _isPersistent;
+   numOfCon = _numOfCon;
+
+   drv = get_mysql_driver_instance();
 
    if (isPersistent) {
       if (connect()) {
@@ -95,39 +98,52 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
 
 }
 
-bool mySQL::open(const string _db) {
+bool mySQL::open(const string _db, const int con_idx) {
    io.lock();
    db = _db.empty() ? db : _db;
-   bool status = true;
+   bool status = true; // ako true greška je
 
-   try {
-      con->setSchema(db);
-      status = false;
-      io.unlock();
-   }
-   catch (const SQLException &error) {
-      cout << error.what() << endl;
-      io.unlock();
-   } 
-   return status;
-}
-
-bool mySQL::connect() {
-   io.lock();
-   uint trys = 0;
-   bool status = true;
-
-   while (trys < CONNECT_TRY_LIMIT && status) {
+   for (uint i=0; i<con.size(); i++) {
+      con_idx != -1 ? i = con_idx : i;
       try {
-         drv = get_mysql_driver_instance();
-         con = drv->connect(path, username, password);
+         con[i]->setSchema(db);
          status = false;
          io.unlock();
       }
       catch (const SQLException &error) {
          cout << error.what() << endl;
-         usleep(10000*trys++);
          io.unlock();
+      }
+      con_idx != -1 ? i = con.size() : i;
+   }
+   
+   return status;
+}
+
+bool mySQL::connect(const int con_idx) {
+   io.lock();
+   uint trys = 0;
+   bool status = true;
+
+   for (uint i=0; i<numOfCon; i++) {
+      con_idx != -1 ? i = con_idx : i;
+      while (reconTrys == 0 ? status : (trys < reconTrys && status)) {
+         try {
+            if (con_idx == -1) {
+               con.push_back(drv->connect(path, username, password));
+            }
+            else {
+               con[i] = drv->connect(path, username, password);
+            }
+            status = false;
+            io.unlock();
+         }
+         catch (const SQLException &error) {
+            cout << error.what() << endl;
+            usleep(reconnectSleep);
+            reconTrys == 0 ? trys : trys++;
+            io.unlock();
+         }
       }
    }
 
@@ -138,37 +154,53 @@ bool mySQL::disconnect() {
    io.lock();
    bool status = true;
 
-   if (con->isValid() && !con->isClosed()) {
-      try {
-         con->close();
-         status = false;
-         io.unlock();
-      } 
-      catch (const SQLException &error) {
-         cout << error.what() << endl;
-         status = true;
-         io.unlock();
+   for (uint i=0; i<con.size(); i++) {
+      if (con[i]->isValid() && !con[i]->isClosed()) {
+         try {
+            con[i]->close();
+            status = false;
+            io.unlock();
+         } 
+         catch (const SQLException &error) {
+            cout << error.what() << endl;
+            status = true;
+            io.unlock();
+         }
       }
-   }
 
-   else {
-      status = false;
+      else {
+         status = false; // već je zatvorena
+      }
    }
 
    return status;
 }
 
+/**
+ * Broj pokušaja usljed povezivanja s bazom od 1 do unlimited;
+*/
+
+void mySQL::reconnectTrys(const uint _trys) {
+   io.lock();
+   reconTrys = _trys;
+   io.unlock();
+}
+
 void mySQL::exec(sqlQA &sql_qa) {
 
-   if (!isPersistent || !con->isValid() || con->isClosed()) {
-      if (connect()) {
-         throw string("[ERROR] Unable to connect database ");
-      }
+   for (uint i=0; i<con.size(); i++) {
+      if (!isPersistent || !con[i]->isValid() || con[i]->isClosed()) {
+         if (connect(i)) {
+            throw string("[ERROR] Unable to connect database ");
+         }
 
-      if (open()) {
-         throw string("[ERROR] Unable to open database " + db);
+         if (open(i)) {
+            throw string("[ERROR] Unable to open database " + db);
+         }
       }
    }
+
+   // find free connection
 
    io.lock();
    /**/
@@ -249,3 +281,50 @@ mySQL::~mySQL() {
       throw string("[ERROR] Unable to close database ");
    }
 }
+
+// mySQLPool::mySQLPool(const uint _maxpools) {
+//    maxpools = _maxpools;
+//    fixServer = false;
+//    fixScheme = true;
+// }
+
+// mySQLPool::mySQLPool(const uint _maxpools, const string _path, const string _username, const string _password, const string _db) {
+//    maxpools = _maxpools;
+//    fixServer = true;
+//    fixScheme = !_db.empty();
+//    for (uint i=0; i<maxpools; i++) {
+//       mySQL tmpmysql(_path, _username, _password, _db);
+//       // struct Drop tmpdrop(new mySQL(_path, _username, _password, _db), false);
+//       droplets.push_back({mySQL(_path, _username, _password, _db, true), false});
+//    }
+// }
+
+// void mySQLPool::exec(sqlQA &sql_qa, const string _db) {
+//    if (!fixScheme && _db.empty()) {
+//       throw string("[ERROR] Database is not selected! ");
+//    }
+
+//    for (uint i=0; i<droplets.size(); i++) {
+//       if (droplets[i].used == false) {
+//          droplets[i].used = true;
+
+//          bool isRunned = false;
+
+//          while (!isRunned) {
+//             for (uint i=0; i<swimmers.size(); i++) {
+//                if (swimmers[i].used == false) {
+//                   swimmers[i].used = true;
+//                   swimmers[i].instance = thread([&]() {
+//                      droplets[i].instance->exec(sql_qa);
+//                   });
+//                   swimmers[i].instance.join();
+//                   swimmers[i].used = false;
+//                   isRunned = true;
+//                }
+//             }
+//          }
+//          droplets[i].used = false;
+//       }
+//    }
+
+// }
