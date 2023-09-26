@@ -18,7 +18,7 @@
 #include <cppconn/resultset.h>
 
 #define unlimited 0
-#define reconnectSleep 100000 // in us
+#define reconnectSleep 10000 // in us
 
 using namespace std;
 using namespace sql;
@@ -60,32 +60,30 @@ class sqlQA {
 };
 
 class mySQL {
-    public:
+    private:
     mutex io;
     MySQL_Driver *drv;
-    // Connection *con;
-    // vector<Connection*> con;
     vector<pair<mutex*, Connection*>> con;
     string path, username, password, db;
     bool isPersistent;
     uint numOfCon;
     uint reconTrys = 3;
     
+    void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
+    bool open_one(const uint idx);
+    bool connect_one(const uint idx);
+    bool disconnect_one(const uint idx);
+    uint findFreeCon();
+
+    public:
     mySQL(const string _path, const string _username, const string _password, const string _db, const bool _isPersistent = false, const uint _numOfCon = 1);
     bool open(const string _db = "");
     bool connect();
     bool disconnect();
     void reconnectTrys(const uint _trys);
     void exec(sqlQA &sql_qa);
-    void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
-
-    // ove će biti privatne sigurno
-    bool open_one(Connection *ptr_con);
-    bool connect_one(Connection *ptr_con);
-    bool disconnect_one(Connection *ptr_con);
-    pair<mutex*, Connection*> findFreeCon();
-
     ~mySQL();
+
 };
 
 

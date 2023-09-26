@@ -9,80 +9,81 @@ using namespace chrono;
 
 int main() {
     try {
-        mySQL mydb("tcp://92.240.56.92:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", true, 2);
+        mySQL mydb("tcp://192.168.2.10:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", true, 3);
 
         auto start = high_resolution_clock::now();
 
-        // thread t1([&](){
-        //     try {
-        //         sqlQA test_qa;
-        //         test_qa.select().from("records").where("enabled = 1");
-        //         mydb.exec(test_qa);
-        //         test_qa.print(true);
-        //     } catch (const string err) {
-        //         cout << err << endl;
-        //     }
-        // });
+        thread t1([&](){
+            try {
+                sqlQA test_qa;
+                test_qa.select().from("records").where("enabled = 1");
+                mydb.exec(test_qa);
+                test_qa.print(true);
+            } catch (const string err) {
+                cout << err << endl;
+            }
+        });
 
-        // thread t2([&](){
-        //     try {
-        //         sqlQA test_qa;
-        //         test_qa.select().from("zones");
-        //         mydb.exec(test_qa);
-        //         test_qa.print(true);
-        //     } catch (const string err) {
-        //         cout << err << endl;
-        //     }
-        // });
+        thread t2([&](){
+            try {
+                sqlQA test_qa;
+                test_qa.select().from("zones");
+                mydb.exec(test_qa);
+                test_qa.print(true);
+            } catch (const string err) {
+                cout << err << endl;
+            }
+        });
 
-        // thread t3([&](){
-        //     try {
-        //         sqlQA test_qa;
-        //         test_qa.select().from("users");
-        //         mydb.exec(test_qa);
-        //         test_qa.print(true);
-        //     } catch (const string err) {
-        //         cout << err << endl;
-        //     }
-        // });
+        thread t3([&](){
+            try {
+                sqlQA test_qa;
+                test_qa.select().from("users");
+                mydb.exec(test_qa);
+                test_qa.print(true);
+            } catch (const string err) {
+                cout << err << endl;
+            }
+        });
 
 
-        // t1.join();
-        // t2.join();
-        // t3.join();
+        t1.join();
+        t2.join();
+        t3.join();
 
         // one by one
-        try {
-            sqlQA test_qa;
-            test_qa.select().from("records").where("enabled = 1");
-            mydb.exec(test_qa);
-            test_qa.print(true);
-        } catch (const string err) {
-            cout << err << endl;
-        }
-    
-        try {
-            sqlQA test_qa;
-            test_qa.select().from("users");
-            mydb.exec(test_qa);
-            test_qa.print(true);
-        } catch (const string err) {
-            cout << err << endl;
-        }
+        // try {
+        //     sqlQA test_qa;
+        //     test_qa.select().from("records").where("enabled = 1");
+        //     mydb.exec(test_qa);
+        //     test_qa.print(true);
+        // } catch (const string err) {
+        //     cout << err << endl;
+        // }
 
-        try {
-            sqlQA test_qa;
-            test_qa.select().from("users");
-            mydb.exec(test_qa);
-            test_qa.print(true);
-        } catch (const string err) {
-            cout << err << endl;
-        }
+    
+        // try {
+        //     sqlQA test_qa;
+        //     test_qa.select().from("users");
+        //     mydb.exec(test_qa);
+        //     test_qa.print(true);
+        // } catch (const string err) {
+        //     cout << err << endl;
+        // }
+
+        // try {
+        //     sqlQA test_qa;
+        //     test_qa.select().from("users");
+        //     mydb.exec(test_qa);
+        //     test_qa.print(true);
+        // } catch (const string err) {
+        //     cout << err << endl;
+        // }
 
 
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(end - start);
-        cout << "-------------Izvršilo se za: " << (double)(duration.count() / 1000.0) << endl;
+        cout << "-------------Izvršilo se za: " << (double)(duration.count() / 1000.0) << " ms"<< endl;
         
         
     } catch (const SQLException error) {

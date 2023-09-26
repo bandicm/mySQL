@@ -15,6 +15,7 @@
         "*.tcc": "cpp",
         "fstream": "cpp",
         "new": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "chrono": "cpp"
     }
 }
