@@ -1,1 +1,1 @@
-g++ test.cpp ../src/* -o test.o -lmysqlcppconn
+g++ test.cpp ../src/* -o test.o -lmysqlcppconn -lpthread

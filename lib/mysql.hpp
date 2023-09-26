@@ -51,6 +51,8 @@ class sqlQA {
     sqlQA& set(const string _column_value_pairs);
     sqlQA& deleteFrom(const string _table);
 
+    void print(bool withDetail = false);
+
     // answer methods
 
     private:
@@ -62,49 +64,29 @@ class mySQL {
     mutex io;
     MySQL_Driver *drv;
     // Connection *con;
-    vector<Connection*> con;
+    // vector<Connection*> con;
+    vector<pair<mutex*, Connection*>> con;
     string path, username, password, db;
     bool isPersistent;
     uint numOfCon;
     uint reconTrys = 3;
     
     mySQL(const string _path, const string _username, const string _password, const string _db, const bool _isPersistent = false, const uint _numOfCon = 1);
-    bool open(const string _db = "", const int con_idx = -1);
-    bool connect(const int con_idx = -1);
+    bool open(const string _db = "");
+    bool connect();
     bool disconnect();
     void reconnectTrys(const uint _trys);
     void exec(sqlQA &sql_qa);
-    void getColumns(const string _table, vector<string> &_columns);
+    void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
+
+    // ove će biti privatne sigurno
+    bool open_one(Connection *ptr_con);
+    bool connect_one(Connection *ptr_con);
+    bool disconnect_one(Connection *ptr_con);
+    pair<mutex*, Connection*> findFreeCon();
+
     ~mySQL();
 };
-
-// class mySQLPool {
-//     public:
-
-//     struct Drop {
-//         mySQL* instance;
-//         bool used = false;
-//     };
-
-//     struct Swimmer {
-//         thread instance;
-//         bool used = false;
-//     };
-
-//     mutex io;
-//     uint maxpools = 0;
-//     vector<struct Drop> droplets;
-//     bool fixServer = false;
-//     bool fixScheme = false;
-//     vector<struct Swimmer> swimmers;
-
-//     mySQLPool(const uint _maxpools);
-//     mySQLPool(const uint _maxpools, const string _path, const string _username, const string _password, const string _db);
-
-//     void exec(sqlQA &sql_qa, const string _db = "");
-
-    
-// };
 
 
 #endif

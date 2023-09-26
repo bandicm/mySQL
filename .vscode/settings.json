@@ -4,6 +4,17 @@
         "vector": "cpp",
         "deque": "cpp",
         "ostream": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "optional": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "mutex": "cpp",
+        "iostream": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "new": "cpp",
+        "thread": "cpp"
     }
 }

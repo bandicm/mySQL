@@ -1,53 +1,95 @@
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include "../lib/mysql.hpp"
 
 using namespace std;
+using namespace chrono;
 
 int main() {
-
-    mySQL mydb("tcp://192.168.2.10:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", true);
-
     try {
+        mySQL mydb("tcp://92.240.56.92:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", true, 2);
 
-        sqlQA test_qa;
-        // id,user_id,zone_id,domain,record_type,auth_key,last_update,enabled
-        // test_qa.select().from("records").where("enabled = 0").limit(2);
-        // mydb.exec(test_qa);
+        auto start = high_resolution_clock::now();
 
-        // for (auto i : test_qa.result) {
-        //     for (auto j: i.second) {
-        //         cout << i.first << " : " << j << endl;
+        // thread t1([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("records").where("enabled = 1");
+        //         mydb.exec(test_qa);
+        //         test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
         //     }
-        // }
+        // });
+
+        // thread t2([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("zones");
+        //         mydb.exec(test_qa);
+        //         test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
+
+        // thread t3([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("users");
+        //         mydb.exec(test_qa);
+        //         test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
 
 
-        // test_qa.update("records").set("enabled = 1").where("domain = 'bitelex.test'");
-        // mydb.exec(test_qa);
-        // if (test_qa.executed) {
-        //     cout << "Num rows affect " << test_qa.updateCatch << endl;
-        // }
+        // t1.join();
+        // t2.join();
+        // t3.join();
 
-        // cout << "Num rows " << test_qa.num_rows << " num columns " << test_qa.num_columns << " executed " << test_qa.executed << endl;
+        // one by one
+        try {
+            sqlQA test_qa;
+            test_qa.select().from("records").where("enabled = 1");
+            mydb.exec(test_qa);
+            test_qa.print(true);
+        } catch (const string err) {
+            cout << err << endl;
+        }
+    
+        try {
+            sqlQA test_qa;
+            test_qa.select().from("users");
+            mydb.exec(test_qa);
+            test_qa.print(true);
+        } catch (const string err) {
+            cout << err << endl;
+        }
+
+        try {
+            sqlQA test_qa;
+            test_qa.select().from("users");
+            mydb.exec(test_qa);
+            test_qa.print(true);
+        } catch (const string err) {
+            cout << err << endl;
+        }
 
 
-        // test_qa.insertInTo("records", "id,user_id,zone_id,domain,record_type,auth_key,last_update,enabled").values("'5',2,2,'www.bitelex.test','AAAA','jebiga',NULL,1");
-        test_qa.deleteFrom("records").where("record_type = AAAA");
-        // test_qa.update("records").set("enabled = 0").where("record_type = 'AAAA'");
-        cout << test_qa.cmd << endl;
-        mydb.exec(test_qa);
-        cout << "Num rows " << test_qa.num_rows << " num columns " << test_qa.num_columns << " catch " << test_qa.updateCatch <<  " executed " << test_qa.executed << endl;
-
-
-
-    }
-    catch (const SQLException error) {
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+        cout << "-------------Izvršilo se za: " << (double)(duration.count() / 1000.0) << endl;
+        
+        
+    } catch (const SQLException error) {
         cout << error.what() << endl;
-    }
-    // catch (const string error) {
-    //     cout << error << endl;
-    // }
-    catch (...) {
+    } catch (const string error) {
+        cout << error << endl;
+    } catch (...) {
         cout << "Jebi ga" << endl;
     }
 
