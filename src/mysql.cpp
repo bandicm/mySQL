@@ -114,6 +114,34 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
             throw string("[ERROR] Unable to open database " + db);
          }
       }
+
+      bot = async(launch::async, [&]{
+         while (runBot) {
+            try {
+               for (uint i=0; i<con.size(); i++) {
+                  if (con[i].first->try_lock()) {
+                     if (!con[i].second->isValid()) {
+                        if (connect_one(i)) {
+                           throw string("[ERROR] Unable to connect database ");
+                        }
+
+                        if (!db.empty()) {
+                           if (open_one(i)) {
+                              throw string("[ERROR] Unable to open database " + db);
+                           }
+                        }
+                     }
+                     con[i].first->unlock();
+                  }
+               }
+            } catch (const SQLException except) {
+               cout << except.what() << endl;
+            } catch (const string except) {
+               cout << except << endl;
+            }
+         }
+         return;
+      });
    }
 
 }
@@ -184,6 +212,7 @@ bool mySQL::disconnect_one(const uint idx) {
       status = false; // već je zatvorena
    }
 
+   delete con[idx].second;
    return status;
 }
 
@@ -236,9 +265,36 @@ void mySQL::reconnectTrys(const uint _trys) {
 }
 
 void mySQL::exec(sqlQA &sql_qa) {
+
+   if (!isPersistent) {
+      if (connect()) {
+         throw string("[ERROR] Unable to connect database ");
+      }
+
+      if (!db.empty()) {
+         if (open()) {
+            throw string("[ERROR] Unable to open database " + db);
+         }
+      }
+   }
+
    const uint idx = findFreeCon(); 
 
-   if (!isPersistent || !con[idx].second->isValid() || con[idx].second->isClosed()) {
+   if (!isPersistent || con[idx].second->isClosed()) {
+      if (connect_one(idx)) {
+         throw string("[ERROR] Unable to connect database ");
+      }
+
+      if (open_one(idx)) {
+         throw string("[ERROR] Unable to open database " + db);
+      }
+   }
+
+   else if (!con[idx].second->isValid()) {
+      if(disconnect_one(idx)) {
+         throw string("[ERROR] Unable to close database ");
+      }
+
       if (connect_one(idx)) {
          throw string("[ERROR] Unable to connect database ");
       }
@@ -325,14 +381,18 @@ uint mySQL::findFreeCon() {
    lock_guard<mutex> master(io);
    while (true) {
       for (uint i=0; i<con.size(); i++) {
-         if (con[i].first->try_lock()) {
-            return i;
-         }
+         // if (con[i].second->isValid()) {
+            if (con[i].first->try_lock()) {
+               return i;
+            }
+         // }
       }
    }
 }
 
 mySQL::~mySQL() {
+   runBot = false;
+   bot.get();
    if(disconnect()) {
       throw string("[ERROR] Unable to close database ");
    }

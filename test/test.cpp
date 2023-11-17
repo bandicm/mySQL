@@ -18,40 +18,75 @@ int main() {
                 sqlQA test_qa;
                 test_qa.select().from("records").where("enabled = 1");
                 mydb.exec(test_qa);
-                test_qa.print(true);
+                //test_qa.print(true);
             } catch (const string err) {
                 cout << err << endl;
             }
         });
 
-        thread t2([&](){
-            try {
-                sqlQA test_qa;
-                test_qa.select().from("zones");
-                mydb.exec(test_qa);
-                test_qa.print(true);
-            } catch (const string err) {
-                cout << err << endl;
-            }
-        });
+        // thread t2([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("zones");
+        //         mydb.exec(test_qa);
+        //         //test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
 
-        thread t3([&](){
-            try {
-                sqlQA test_qa;
-                test_qa.select().from("users");
-                mydb.exec(test_qa);
-                test_qa.print(true);
-            } catch (const string err) {
-                cout << err << endl;
-            }
-        });
+        // thread t3([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("users");
+        //         mydb.exec(test_qa);
+        //         //test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
 
+        // thread t4([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("records").where("enabled = 1");
+        //         mydb.exec(test_qa);
+        //         //test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
+
+        // thread t5([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("zones");
+        //         mydb.exec(test_qa);
+        //         //test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
+
+        // thread t6([&](){
+        //     try {
+        //         sqlQA test_qa;
+        //         test_qa.select().from("users");
+        //         mydb.exec(test_qa);
+        //         // test_qa.print(true);
+        //     } catch (const string err) {
+        //         cout << err << endl;
+        //     }
+        // });
 
         t1.join();
-        t2.join();
-        t3.join();
+        // t2.join();
+        // t3.join();
+        // t4.join();
+        // t5.join();
+        // t6.join();
 
-        // one by one
+//        one by one
         // try {
         //     sqlQA test_qa;
         //     test_qa.select().from("records").where("enabled = 1");
@@ -93,6 +128,8 @@ int main() {
     } catch (...) {
         cout << "Jebi ga" << endl;
     }
+
+    sleep(100);
 
 
     return 0;

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <future>
 
 #include <mysql_driver.h>
 #include <mysql_connection.h>
@@ -68,6 +69,8 @@ class mySQL {
     bool isPersistent;
     uint numOfCon;
     uint reconTrys = 3;
+    bool runBot = true;
+    future<void> bot;
     
     void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
     bool open_one(const uint idx);
