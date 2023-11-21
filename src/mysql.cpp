@@ -94,83 +94,57 @@ void sqlQA::parse_columns(const string _columns) {
    }
 }
 
-mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, const bool _isPersistent, const uint _numOfCon) {
+mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, const uint _available) {
    path = _path;
    username = _username;
    password = _password;
    db = _db;
-   isPersistent = _numOfCon > 1 ? true : _isPersistent;
-   numOfCon = _numOfCon > 0 ? _numOfCon : 1;
+   available = _available > 0 ? _available : 1;
 
    drv = get_mysql_driver_instance();
 
-   if (isPersistent) {
-      if (connect()) {
-         throw string("[ERROR] Unable to connect database ");
-      }
-
-      if (!db.empty()) {
-         if (open()) {
-            throw string("[ERROR] Unable to open database " + db);
-         }
-      }
-
-      bot = async(launch::async, [&]{
-         while (runBot) {
+   bot = async(launch::async, [&]{
+      while (runBot) {
+         while (available>con.size() && runBot) {
             try {
-               for (uint i=0; i<con.size(); i++) {
-                  if (con[i].first->try_lock()) {
-                     if (!con[i].second->isValid()) {
-                        if (connect_one(i)) {
-                           throw string("[ERROR] Unable to connect database ");
-                        }
-
-                        if (!db.empty()) {
-                           if (open_one(i)) {
-                              throw string("[ERROR] Unable to open database " + db);
-                           }
-                        }
-                     }
-                     con[i].first->unlock();
+               Connection* new_con_ptr = create_con();
+               if (!db.empty()) {
+                  if (open_one(new_con_ptr)) {
+                     throw string("[ERROR] Unable to open database " + db);
                   }
                }
+               io.lock();
+               con.push_back(new_con_ptr);       
+               io.unlock();
             } catch (const SQLException except) {
                cout << except.what() << endl;
             } catch (const string except) {
                cout << except << endl;
-            }
+            }     
          }
-         return;
-      });
-   }
+      }
+
+      return;
+   });
 
 }
 
-bool mySQL::connect() {
-   io.lock();
-   bool status = true;
 
-   for (uint i=0; i<numOfCon; i++) {
-      status = connect_one(i);
-   }
-
-   io.unlock();
-   return status;
-}
-
-bool mySQL::connect_one(const uint idx) {
+Connection* mySQL::create_con() {
    uint trys = 0;
    bool status = true;
+   Connection* new_con = NULL;
 
    while (reconTrys == unlimited ? status : (trys <= reconTrys && status)) {
       try {
-         if (con.size() < numOfCon) {
-            con.push_back(make_pair(new mutex, drv->connect(path, username, password)));
+         Connection* con_can = drv->connect(path, username, password);
+         status = !con_can->isValid();
+         if (!status) {
+            new_con = con_can;
          }
-         else {
-            con[idx].second = drv->connect(path, username, password);
+         else if (!con_can->isClosed()) {
+            disconnect_one(con_can);
          }
-         status = !con[idx].second->isValid() && con[idx].second->isClosed() || con[idx].second->isClosed();
       }
       catch (const SQLException &error) {
          cout << error.what() << endl;
@@ -179,7 +153,7 @@ bool mySQL::connect_one(const uint idx) {
       }         
    }
 
-   return status;
+   return new_con;
 }
 
 bool mySQL::disconnect() {
@@ -187,20 +161,20 @@ bool mySQL::disconnect() {
    bool status = true;
 
    for (uint i=0; i<con.size(); i++) {
-      status = disconnect_one(i) ;
+      status = disconnect_one(con[i]) ;
    }
 
    io.unlock();
    return status;
 }
 
-bool mySQL::disconnect_one(const uint idx) {
-   bool status = !con[idx].second->isClosed();
+bool mySQL::disconnect_one(Connection* con_ptr) {
+   bool status = !con_ptr->isClosed();
 
    if (status) {
       try {
-         con[idx].second->close();
-         status = !con[idx].second->isClosed();
+         con_ptr->close();
+         status = !con_ptr->isClosed();
       } 
       catch (const SQLException &error) {
          cout << error.what() << endl;
@@ -212,32 +186,18 @@ bool mySQL::disconnect_one(const uint idx) {
       status = false; // već je zatvorena
    }
 
-   delete con[idx].second;
+   delete con_ptr;
    return status;
 }
 
-
-bool mySQL::open(const string _db) {
-   io.lock();
-   db = _db.empty() ? db : _db;
-   bool status = true; // ako true greška je
-
-   for (uint i=0; i<con.size(); i++) {
-      status = open_one(i);
-   }
-
-   io.unlock();
-   return status;
-}
-
-bool mySQL::open_one(const uint idx) {
+bool mySQL::open_one(Connection* con_ptr) {
    bool status = true; // ako true greška je
    uint trys = 0;
 
    while (reconTrys == unlimited ? status : (trys <= reconTrys && status)) {
       try {
-         if (con[idx].second->isValid()) {
-            con[idx].second->setSchema(db);
+         if (con_ptr->isValid()) {
+            con_ptr->setSchema(db);
             status = false;
          }
          else {
@@ -264,55 +224,19 @@ void mySQL::reconnectTrys(const uint _trys) {
    io.unlock();
 }
 
+
 void mySQL::exec(sqlQA &sql_qa) {
-
-   if (!isPersistent) {
-      if (connect()) {
-         throw string("[ERROR] Unable to connect database ");
-      }
-
-      if (!db.empty()) {
-         if (open()) {
-            throw string("[ERROR] Unable to open database " + db);
-         }
-      }
-   }
-
-   const uint idx = findFreeCon(); 
-
-   if (!isPersistent || con[idx].second->isClosed()) {
-      if (connect_one(idx)) {
-         throw string("[ERROR] Unable to connect database ");
-      }
-
-      if (open_one(idx)) {
-         throw string("[ERROR] Unable to open database " + db);
-      }
-   }
-
-   else if (!con[idx].second->isValid()) {
-      if(disconnect_one(idx)) {
-         throw string("[ERROR] Unable to close database ");
-      }
-
-      if (connect_one(idx)) {
-         throw string("[ERROR] Unable to connect database ");
-      }
-
-      if (open_one(idx)) {
-         throw string("[ERROR] Unable to open database " + db);
-      }
-   }
+   Connection* con_ptr = shift_con(); 
 
    try {
       vector<string> columns = sql_qa.columns;
       
       if (columns.empty() && !sql_qa.table.empty()) {
-         getColumns(sql_qa.table, columns, con[idx].second);
+         getColumns(sql_qa.table, columns, con_ptr);
       }
 
       Statement *stmt;
-      stmt = con[idx].second->createStatement();
+      stmt = con_ptr->createStatement();
 
       if (sql_qa.isSelect) {
          ResultSet *res = stmt->executeQuery(sql_qa.cmd);
@@ -342,23 +266,16 @@ void mySQL::exec(sqlQA &sql_qa) {
 
       stmt->close();
       delete stmt;
+      disconnect_one(con_ptr);
    }
    catch (const SQLException &error) {
       cout << error.what() << endl;
       sql_qa.executed = false;
    }
    catch (const string error) {
-      con[idx].first->unlock();
       throw error;
    }
 
-   if (!isPersistent) {
-      if(disconnect_one(idx)) {
-         throw string("[ERROR] Unable to close database ");
-      }
-   }
-
-   con[idx].first->unlock();
 }
 
 void mySQL::getColumns(const string _table, vector<string> &_columns, Connection *ptr_con) {
@@ -377,16 +294,16 @@ void mySQL::getColumns(const string _table, vector<string> &_columns, Connection
    delete stmt;
 }
 
-uint mySQL::findFreeCon() {
-   lock_guard<mutex> master(io);
+Connection* mySQL::shift_con() {
    while (true) {
+      io.lock();
       for (uint i=0; i<con.size(); i++) {
-         // if (con[i].second->isValid()) {
-            if (con[i].first->try_lock()) {
-               return i;
-            }
-         // }
+         Connection* con_ptr = con[0];
+         con.pop_front();
+         io.unlock();
+         return con_ptr;
       }
+      io.unlock();
    }
 }
 

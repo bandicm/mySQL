@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <deque>
 #include <map>
 #include <iostream>
 #include <mutex>
@@ -64,24 +65,22 @@ class mySQL {
     private:
     mutex io;
     MySQL_Driver *drv;
-    vector<pair<mutex*, Connection*>> con;
+    deque<Connection*> con;
     string path, username, password, db;
-    bool isPersistent;
-    uint numOfCon;
+    uint available;
     uint reconTrys = 3;
+
     bool runBot = true;
     future<void> bot;
     
     void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
-    bool open_one(const uint idx);
-    bool connect_one(const uint idx);
-    bool disconnect_one(const uint idx);
-    uint findFreeCon();
+    bool open_one(Connection* con_ptr);
+    Connection* create_con();
+    bool disconnect_one(Connection* con_ptr);
+    Connection* shift_con();
 
     public:
-    mySQL(const string _path, const string _username, const string _password, const string _db, const bool _isPersistent = false, const uint _numOfCon = 1);
-    bool open(const string _db = "");
-    bool connect();
+    mySQL(const string _path, const string _username, const string _password, const string _db, const uint _available = 1);
     bool disconnect();
     void reconnectTrys(const uint _trys);
     void exec(sqlQA &sql_qa);
