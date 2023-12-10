@@ -122,6 +122,7 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
                cout << except << endl;
             }     
          }
+         usleep(1000); // za smanjenje zauzeća procesora
       }
 
       return;
@@ -297,11 +298,15 @@ void mySQL::getColumns(const string _table, vector<string> &_columns, Connection
 Connection* mySQL::shift_con() {
    while (true) {
       io.lock();
-      for (uint i=0; i<con.size(); i++) {
+      for (int i=0; i<con.size(); i++) {
          Connection* con_ptr = con[0];
          con.pop_front();
-         io.unlock();
-         return con_ptr;
+         if (con_ptr->isValid()) {
+            io.unlock();
+            return con_ptr;
+         } else {
+            --i;
+         }
       }
       io.unlock();
    }
