@@ -13,7 +13,7 @@ int main() {
         mySQL mydb("tcp://192.168.2.10:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", 5);
 
         // sleep(3600*10);
-        sleep(30);
+        sleep(20);
 
 
         auto start = high_resolution_clock::now();
@@ -99,24 +99,27 @@ int main() {
         // t6.join();
 
 //        one by one
-        // try {
-        //     sqlQA test_qa;
-        //     test_qa.select().from("records").where("enabled = 1");
-        //     mydb.exec(test_qa);
-        //     test_qa.print(true);
-        // } catch (const string err) {
-        //     cout << err << endl;
-        // }
+        try {
+            sqlQA test_qa;
+            test_qa.select().from("records").where("enabled = 1");
+            mydb.exec(test_qa);
+            test_qa.print(true);
+        } catch (const string err) {
+            cout << err << endl;
+        }
 
+        sleep(20);
     
-        // try {
-        //     sqlQA test_qa;
-        //     test_qa.select().from("users");
-        //     mydb.exec(test_qa);
-        //     test_qa.print(true);
-        // } catch (const string err) {
-        //     cout << err << endl;
-        // }
+        try {
+            sqlQA test_qa;
+            test_qa.select().from("users");
+            mydb.exec(test_qa);
+            test_qa.print(true);
+        } catch (const string err) {
+            cout << err << endl;
+        }
+
+        sleep(20);
 
         try {
             sqlQA test_qa;
@@ -143,7 +146,7 @@ int main() {
         cout << "Jebi ga" << endl;
     }
 
-
+    sleep(600);
 
     return 0;
 }

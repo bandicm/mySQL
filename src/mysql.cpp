@@ -103,8 +103,9 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
 
    drv = get_mysql_driver_instance();
 
-   bot = async(launch::async, [&]{
+   bot = async(launch::async, [&](){
       while (runBot) {
+         sleep(1);
          while (available>con.size() && runBot) {
             try {
                Connection* new_con_ptr = create_con();
@@ -122,11 +123,19 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
                cout << except << endl;
             }     
          }
-         usleep(1000); // za smanjenje zauzeća procesora
-      }
 
+         for (int i=0; i<con.size() && runBot; i++) {
+            if (!con[i]->isValid()) {
+               cout << "Connection is not valid, remove it from pool!" << endl;
+               io.lock();
+               con.erase(con.begin()+i);
+               io.unlock();
+               i--;
+            }
+         }
+      }
       return;
-   });
+   });  
 
 }
 
@@ -297,18 +306,17 @@ void mySQL::getColumns(const string _table, vector<string> &_columns, Connection
 
 Connection* mySQL::shift_con() {
    while (true) {
-      io.lock();
-      for (int i=0; i<con.size(); i++) {
+      while(con.size()) {
+         io.lock();
          Connection* con_ptr = con[0];
          con.pop_front();
          if (con_ptr->isValid()) {
             io.unlock();
             return con_ptr;
-         } else {
-            --i;
-         }
+         } 
+         io.unlock();
       }
-      io.unlock();
+      usleep(1000);
    }
 }
 
