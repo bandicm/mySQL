@@ -126,7 +126,6 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
 
          for (int i=0; i<con.size() && runBot; i++) {
             if (!con[i]->isValid()) {
-               cout << "Connection is not valid, remove it from pool!" << endl;
                io.lock();
                con.erase(con.begin()+i);
                io.unlock();
@@ -323,7 +322,5 @@ Connection* mySQL::shift_con() {
 mySQL::~mySQL() {
    runBot = false;
    bot.get();
-   if(disconnect()) {
-      throw string("[ERROR] Unable to close database ");
-   }
+   disconnect();
 }
