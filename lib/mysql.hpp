@@ -1,15 +1,12 @@
 #ifndef _MYSQL_
 #define _MYSQL_
 
-#include <string>
-#include <sstream>
-#include <vector>
 #include <deque>
-#include <map>
-#include <iostream>
 #include <mutex>
 #include <thread>
 #include <future>
+
+#include "sqlqa.hpp"
 
 #include <mysql_driver.h>
 #include <mysql_connection.h>
@@ -26,67 +23,78 @@ using namespace std;
 using namespace sql;
 using namespace mysql;
 
-class sqlQA {
-    public:
-    // query
-    string cmd;
-    string table;
-    vector<string> columns;
-    bool isUpdate = false;
-    bool isSelect = false;
-
-    // answer
-    uint updateCatch = 0;
-    bool executed = false;
-    map<string, vector<string>> result;
-    uint num_rows = 0;
-    uint num_columns = 0;
-
-    // query methods
-    sqlQA& select(const string _select = "*");
-    sqlQA& from(const string _tablename);
-    sqlQA& where(const string _condition);
-    sqlQA& limit(const uint _limit);
-    sqlQA& insertInTo(const string _tablename, const string _columns = "");
-    sqlQA& values(const string _values);
-    sqlQA& update(const string _tablename);
-    sqlQA& set(const string _column_value_pairs);
-    sqlQA& deleteFrom(const string _table);
-
-    void print(bool withDetail = false);
-
-    // answer methods
-
-    private:
-    void parse_columns(const string _cloumns);
-};
+namespace marcelb {
 
 class mySQL {
-    private:
     mutex io;
     MySQL_Driver *drv;
     deque<Connection*> con;
     string path, username, password, db;
     uint available;
     uint reconTrys = 3;
-
     bool runBot = true;
     future<void> bot;
     
+    /**
+     * Get column names for a table
+    */
     void getColumns(const string _table, vector<string> &_columns, Connection *ptr_con); // privatno
+    
+    /**
+     * Open one database
+    */
     bool open_one(Connection* con_ptr);
+
+    /**
+     * Open one database server connection
+    */
     Connection* create_con();
+
+    /**
+     * Close one database connection
+    */
     bool disconnect_one(Connection* con_ptr);
+
+    /**
+     * Take an available database connection
+    */
     Connection* shift_con();
 
     public:
+
+    /**
+     * mySQL constructor,
+     * receive the path to the mysql server, 
+     * username, password, database name,
+     * and number of active connections (optional)
+    */
     mySQL(const string _path, const string _username, const string _password, const string _db, const uint _available = 1);
+
+    /**
+     * Disconnect all connections to server
+    */
     bool disconnect();
+
+    /**
+     * Define the maximum number of attempts to
+     * reconnect to the server 
+    */
     void reconnectTrys(const uint _trys);
+
+    /**
+     * Execute SQLQA
+    */
     void exec(sqlQA &sql_qa);
+
+    /**
+     * Destruktor
+     * close all connections
+    */
     ~mySQL();
 
 };
 
+
+}
 
 #endif

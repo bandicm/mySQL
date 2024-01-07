@@ -6,6 +6,7 @@
 
 using namespace std;
 using namespace chrono;
+using namespace marcelb;
 
 int main() {
     try {
@@ -13,7 +14,6 @@ int main() {
         mySQL mydb("tcp://192.168.2.10:3306", "dinio", "H€r5elfInd1aH@nds", "dinio", 5);
 
         // sleep(3600*10);
-        sleep(20);
 
 
         auto start = high_resolution_clock::now();

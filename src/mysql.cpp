@@ -1,100 +1,7 @@
 #include "../lib/mysql.hpp"
 
-sqlQA& sqlQA::select(const string _columns) {
-   if (_columns != "*") {
-      parse_columns(_columns);
-   }
-   isSelect = true;
-   cmd += "SELECT " + _columns + " ";
-   return *this;
-}
 
-sqlQA& sqlQA::from(const string _table) {
-   table = _table;
-   cmd += "FROM " + _table + " ";
-   return *this;
-}
-
-sqlQA& sqlQA::where(const string _condition) {
-   cmd += "WHERE " + _condition + " ";
-   return *this;
-}
-
-sqlQA& sqlQA::limit(const uint _limit) {
-   cmd += "LIMIT " + to_string(_limit) + " ";
-   return *this;
-}
-
-sqlQA& sqlQA::insertInTo(const string _tablename, const string _columns) {
-   isUpdate = true;
-   cmd += "INSERT INTO " + _tablename;
-   if (_columns.empty()) {
-      cmd += " ";
-   }
-   else {
-      cmd += " (" + _columns + ") ";
-   }
-   return *this;
-}
-
-sqlQA& sqlQA::values(const string _values) {
-   cmd += "VALUES (" + _values + ") ";
-   return *this;
-}
-
-sqlQA& sqlQA::update(const string _table) {
-   isUpdate = true;
-   cmd += "UPDATE " + _table + " ";
-   return *this;
-}
-
-sqlQA& sqlQA::set(const string _column_value_pairs) {
-   cmd += "SET " + _column_value_pairs + " ";
-   return *this;
-}
-
-sqlQA& sqlQA::deleteFrom(const string _table) {
-   isUpdate = true;
-   cmd += "DELETE FROM " + _table + " ";
-   return *this;
-}
-
-void sqlQA::print(bool withDetail) {
-   cout << "============================================" << endl;
-
-   for (auto i : result) {
-      for (auto j: i.second) {
-         cout << i.first << " : " << j << endl;
-      }
-      cout << "--------------------------------------------" << endl;
-   }
-
-   if (withDetail) {
-      cout << "-----------------DETAILS--------------------" << endl;
-      cout << "Is executed: " << (executed ? "true" : "false") << endl;
-      cout << "Update catch: " << updateCatch << endl;
-      cout << "Num of rows: " << num_rows << endl;
-      cout << "Num of columns: " << num_columns << endl;
-   }
-   cout << "============================================" << endl;
-
-}
-
-void sqlQA::parse_columns(const string _columns) {
-   istringstream iss(_columns);
-   string columnName;
-
-   while (getline(iss, columnName, ',')) {
-      size_t startPos = columnName.find_first_not_of(" ");
-      size_t endPos = columnName.find_last_not_of(" ");
-      
-      if (startPos != string::npos && endPos != string::npos) {
-         columns.push_back(columnName.substr(startPos, endPos - startPos + 1));
-      }
-   }
-}
-
-mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, const uint _available) {
+marcelb::mySQL::mySQL(const string _path, const string _username, const string _password, const string _db, const uint _available) {
    path = _path;
    username = _username;
    password = _password;
@@ -139,7 +46,7 @@ mySQL::mySQL(const string _path, const string _username, const string _password,
 }
 
 
-Connection* mySQL::create_con() {
+Connection* marcelb::mySQL::create_con() {
    uint trys = 0;
    bool status = true;
    Connection* new_con = NULL;
@@ -165,7 +72,7 @@ Connection* mySQL::create_con() {
    return new_con;
 }
 
-bool mySQL::disconnect() {
+bool marcelb::mySQL::disconnect() {
    io.lock();
    bool status = true;
 
@@ -177,7 +84,7 @@ bool mySQL::disconnect() {
    return status;
 }
 
-bool mySQL::disconnect_one(Connection* con_ptr) {
+bool marcelb::mySQL::disconnect_one(Connection* con_ptr) {
    bool status = !con_ptr->isClosed();
 
    if (status) {
@@ -199,7 +106,7 @@ bool mySQL::disconnect_one(Connection* con_ptr) {
    return status;
 }
 
-bool mySQL::open_one(Connection* con_ptr) {
+bool marcelb::mySQL::open_one(Connection* con_ptr) {
    bool status = true; // ako true greška je
    uint trys = 0;
 
@@ -227,14 +134,14 @@ bool mySQL::open_one(Connection* con_ptr) {
  * Broj pokušaja usljed povezivanja s bazom od 1 do unlimited;
 */
 
-void mySQL::reconnectTrys(const uint _trys) {
+void marcelb::mySQL::reconnectTrys(const uint _trys) {
    io.lock();
    reconTrys = _trys;
    io.unlock();
 }
 
 
-void mySQL::exec(sqlQA &sql_qa) {
+void marcelb::mySQL::exec(sqlQA &sql_qa) {
    Connection* con_ptr = shift_con(); 
 
    try {
@@ -287,7 +194,7 @@ void mySQL::exec(sqlQA &sql_qa) {
 
 }
 
-void mySQL::getColumns(const string _table, vector<string> &_columns, Connection *ptr_con) {
+void marcelb::mySQL::getColumns(const string _table, vector<string> &_columns, Connection *ptr_con) {
    Statement *stmt;
    stmt = ptr_con->createStatement();
    
@@ -303,7 +210,7 @@ void mySQL::getColumns(const string _table, vector<string> &_columns, Connection
    delete stmt;
 }
 
-Connection* mySQL::shift_con() {
+Connection* marcelb::mySQL::shift_con() {
    while (true) {
       while(con.size()) {
          io.lock();
@@ -319,7 +226,7 @@ Connection* mySQL::shift_con() {
    }
 }
 
-mySQL::~mySQL() {
+marcelb::mySQL::~mySQL() {
    runBot = false;
    bot.get();
    disconnect();

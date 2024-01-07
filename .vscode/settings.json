@@ -16,6 +16,8 @@
         "fstream": "cpp",
         "new": "cpp",
         "thread": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "sstream": "cpp",
+        "map": "cpp"
     }
 }
